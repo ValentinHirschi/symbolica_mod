@@ -1,5 +1,9 @@
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 use super::*;
 use crate::utils::Settable;
+
+static PYTHON_EXPRESSION_ALIAS_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
 /// Operations that transform an expression.
 #[cfg_attr(feature = "python_stubgen", gen_stub_pyclass)]
@@ -3414,6 +3418,28 @@ impl PythonExpression {
     /// Copy the expression.
     pub fn __copy__(&self) -> PythonExpression {
         self.expr.clone().into()
+    }
+
+    /// Return a manual evaluator alias definition for this expression.
+    ///
+    /// The returned pair has the form `(handle, body)` and can be passed directly
+    /// to `Expression.evaluator(..., aliases=[...])` or
+    /// `Expression.evaluator_multiple(..., aliases=[...])`. If no handle is
+    /// supplied, a fresh symbol in the `symbolica::py_alias_*` namespace is
+    /// generated. The `opaque` argument is reserved for compatibility with the
+    /// alias-backed API; evaluator aliases are treated as opaque manual slots.
+    #[pyo3(signature = (handle = None, opaque = true))]
+    pub fn alias(
+        &self,
+        handle: Option<PythonExpression>,
+        opaque: bool,
+    ) -> (PythonExpression, PythonExpression) {
+        let _ = opaque;
+        let handle = handle.unwrap_or_else(|| {
+            let index = PYTHON_EXPRESSION_ALIAS_COUNTER.fetch_add(1, Ordering::Relaxed);
+            Atom::var(crate::symbol!(format!("symbolica::py_alias_{index}"))).into()
+        });
+        (handle, self.clone())
     }
 
     /// Convert the expression into a portable string.

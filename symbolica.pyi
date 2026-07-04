@@ -1044,6 +1044,19 @@ class Expression:
         Copy the expression.
         """
 
+    def alias(
+        self,
+        handle: Expression | None = None,
+        opaque: bool = True,
+    ) -> tuple[Expression, Expression]:
+        """
+        Return a manual evaluator alias definition `(handle, body)`.
+
+        The returned pair can be passed directly to `Expression.evaluator(...,
+        aliases=[...])` or `Expression.evaluator_multiple(..., aliases=[...])`.
+        If no handle is provided, Symbolica creates a fresh alias symbol.
+        """
+
     def __str__(self) -> str:
         """
         Convert the expression into a human-readable string.
@@ -3410,6 +3423,7 @@ class Expression:
         params: Sequence[Expression],
         functions: dict[tuple[Expression,
                               Sequence[Expression]], Expression] = {},
+        aliases: Sequence[tuple[Expression, Expression]] | None = None,
         iterations: int = 1,
         cpe_iterations: int | None = None,
         n_cores: int = 4,
@@ -3456,6 +3470,8 @@ class Expression:
         functions: dict[tuple[Expression, Sequence[Expression]], Expression]
             A dictionary of functions. The key is a tuple of the function name and the argument variables.
             The value is the function body. If the function name entry contains arguments, these are considered tags.
+        aliases: Sequence[tuple[Expression, Expression]] | None
+            Manual alias definitions `(handle, body)` used as opaque evaluator slots.
         iterations: int, optional
             The number of Horner schemes to try.
         cpe_iterations: int | None, optional
@@ -3488,6 +3504,7 @@ class Expression:
         params: Sequence[Expression],
         functions: dict[tuple[Expression,
                               Sequence[Expression]], Expression] = {},
+        aliases: Sequence[tuple[Expression, Expression]] | None = None,
         iterations: int = 1,
         cpe_iterations: int | None = None,
         n_cores: int = 4,
@@ -3523,6 +3540,8 @@ class Expression:
         functions: dict[tuple[Expression, Sequence[Expression]], Expression]
             A dictionary of functions. The key is a tuple of the function name and the argument variables.
             The value is the function body. If the function name entry contains arguments, these are considered tags.
+        aliases: Sequence[tuple[Expression, Expression]] | None
+            Manual alias definitions `(handle, body)` used as opaque evaluator slots.
         iterations: int
             The number of optimization passes to run.
         cpe_iterations: int | None

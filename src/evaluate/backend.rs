@@ -1281,10 +1281,14 @@ impl BatchEvaluator<Complex<f64>> for JITCompiledEvaluator<Complex<wide::f64x4>>
             self.evaluate(i, o);
         }
 
-        for (o, i) in out.chunks_mut(4 * n_out).zip(&output_buffer) {
-            for (j, d) in o.iter_mut().enumerate() {
-                d.re = i.re.as_array()[j];
-                d.im = i.im.as_array()[j];
+        for (o, i) in out.chunks_mut(4 * n_out).zip(output_buffer.chunks(n_out)) {
+            let lane_count = o.len() / n_out;
+            for (j, d) in i.iter().enumerate() {
+                for lane in 0..lane_count {
+                    let out_index = lane * n_out + j;
+                    o[out_index].re = d.re.as_array()[lane];
+                    o[out_index].im = d.im.as_array()[lane];
+                }
             }
         }
 
@@ -2015,20 +2019,27 @@ impl CompiledNumber for Complex<wide::f64x4> {
         function_name: &str,
         settings: ExportSettings,
     ) -> Result<String, String> {
-        if !eval.stack.iter().all(|x| x.is_real()) {
-            return Err(
-                "Cannot create real evaluator with complex coefficients. Use Complex<f64>".into(),
-            );
-        }
-
         Ok(match settings.inline_asm {
             // assume AVX2 for X64
             InlineASM::X64 => eval.export_simd_str(function_name, settings, true, InlineASM::AVX2),
             InlineASM::AArch64 => {
                 Err("X64 inline assembly not supported for SIMD f64x4: use AVX2".to_owned())?
             }
-            asm @ InlineASM::AVX2 | asm @ InlineASM::None => {
-                eval.export_simd_str(function_name, settings, true, asm)
+            asm @ InlineASM::AVX2 => eval.export_simd_str(function_name, settings, true, asm),
+            InlineASM::None => {
+                #[cfg(target_arch = "aarch64")]
+                {
+                    Err(
+                        "SIMD complex f64x4 C++ export is not ABI-compatible with \
+                         xsimd::batch<std::complex<double>, xsimd::best_arch> on aarch64: \
+                         xsimd uses two complex lanes while Symbolica passes four lanes."
+                            .to_owned(),
+                    )?
+                }
+                #[cfg(not(target_arch = "aarch64"))]
+                {
+                    eval.export_simd_str(function_name, settings, true, InlineASM::None)
+                }
             }
         })
     }
@@ -2145,10 +2156,14 @@ impl BatchEvaluator<Complex<f64>> for CompiledSimdComplexEvaluator {
             self.evaluate(i, o);
         }
 
-        for (o, i) in out.chunks_mut(4 * n_out).zip(&output_buffer) {
-            for (j, d) in o.iter_mut().enumerate() {
-                d.re = i.re.as_array()[j];
-                d.im = i.im.as_array()[j];
+        for (o, i) in out.chunks_mut(4 * n_out).zip(output_buffer.chunks(n_out)) {
+            let lane_count = o.len() / n_out;
+            for (j, d) in i.iter().enumerate() {
+                for lane in 0..lane_count {
+                    let out_index = lane * n_out + j;
+                    o[out_index].re = d.re.as_array()[lane];
+                    o[out_index].im = d.im.as_array()[lane];
+                }
             }
         }
 
