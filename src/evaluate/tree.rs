@@ -1,5 +1,168 @@
 use super::*;
 
+/// Errors that can occur while building or performing numerical expression evaluation.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum EvaluationError {
+    NotIndeterminate {
+        atom: Atom,
+    },
+    InvalidParameterCount {
+        expected: usize,
+        actual: usize,
+    },
+    InvalidOutputCount {
+        expected: usize,
+        actual: usize,
+    },
+    UnsupportedHotStart,
+    UnsupportedCoefficient {
+        coefficient: String,
+    },
+    UndefinedVariable {
+        symbol: Symbol,
+    },
+    UndefinedFunction {
+        expression: Atom,
+    },
+    WrongNumberOfArguments {
+        function: Symbol,
+        expected: usize,
+        actual: usize,
+    },
+    UnsupportedBuiltinArity {
+        function: Symbol,
+        expected: usize,
+        actual: usize,
+    },
+    InconsistentFunctionTagCount {
+        function: Symbol,
+        expected: usize,
+        actual: usize,
+    },
+    NumericalTypeDoesNotSupportImaginaryUnit,
+    EvaluationFailed {
+        expression: Atom,
+        reason: String,
+    },
+    EvaluationTreeConstructionFailed {
+        expression: Atom,
+        reason: String,
+    },
+    EvaluatorConstructionFailed {
+        expression: Atom,
+        reason: String,
+    },
+    MultiEvaluatorConstructionFailed {
+        expression_count: usize,
+        reason: String,
+    },
+    MissingEvaluator {
+        expression: Atom,
+        eval_type: String,
+    },
+}
+
+impl From<String> for EvaluationError {
+    fn from(reason: String) -> Self {
+        Self::EvaluationFailed {
+            expression: Atom::num(0),
+            reason,
+        }
+    }
+}
+
+impl From<&str> for EvaluationError {
+    fn from(reason: &str) -> Self {
+        reason.to_owned().into()
+    }
+}
+
+impl std::error::Error for EvaluationError {}
+
+impl std::fmt::Display for EvaluationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            EvaluationError::NotIndeterminate { atom } => {
+                write!(f, "atom is not indeterminate: {atom:?}")
+            }
+            EvaluationError::InvalidParameterCount { expected, actual } => {
+                write!(f, "invalid parameter count: expected {expected}, got {actual}")
+            }
+            EvaluationError::InvalidOutputCount { expected, actual } => {
+                write!(f, "invalid output count: expected {expected}, got {actual}")
+            }
+            EvaluationError::UnsupportedHotStart => {
+                f.write_str("hot start is not supported before the deprecation of Expression")
+            }
+            EvaluationError::UnsupportedCoefficient { coefficient } => {
+                write!(f, "{coefficient} coefficients are not supported for evaluation")
+            }
+            EvaluationError::UndefinedVariable { symbol } => {
+                write!(
+                    f,
+                    "variable {symbol} is not in a parameter map and does not have an evaluator"
+                )
+            }
+            EvaluationError::UndefinedFunction { expression } => {
+                write!(
+                    f,
+                    "function {expression} is not in a parameter map and does not have an evaluator"
+                )
+            }
+            EvaluationError::WrongNumberOfArguments {
+                function,
+                expected,
+                actual,
+            } => write!(
+                f,
+                "function {} called with wrong number of arguments: {actual} vs {expected}",
+                function.get_name()
+            ),
+            EvaluationError::UnsupportedBuiltinArity {
+                function,
+                expected,
+                actual,
+            } => write!(
+                f,
+                "builtin function {} must have exactly {expected} argument(s), got {actual}",
+                function.get_name()
+            ),
+            EvaluationError::InconsistentFunctionTagCount {
+                function,
+                expected,
+                actual,
+            } => write!(
+                f,
+                "function {} has inconsistent tag count: expected {expected}, got {actual}",
+                function.get_name()
+            ),
+            EvaluationError::NumericalTypeDoesNotSupportImaginaryUnit => {
+                f.write_str("numerical type does not support the imaginary unit")
+            }
+            EvaluationError::EvaluationFailed { expression, reason } => {
+                write!(f, "evaluation of {expression} failed: {reason}")
+            }
+            EvaluationError::EvaluationTreeConstructionFailed { expression, reason } => {
+                write!(f, "evaluation-tree construction for {expression} failed: {reason}")
+            }
+            EvaluationError::EvaluatorConstructionFailed { expression, reason } => {
+                write!(f, "evaluator construction for {expression} failed: {reason}")
+            }
+            EvaluationError::MultiEvaluatorConstructionFailed {
+                expression_count,
+                reason,
+            } => write!(
+                f,
+                "multi-evaluator construction for {expression_count} expressions failed: {reason}"
+            ),
+            EvaluationError::MissingEvaluator {
+                expression,
+                eval_type,
+            } => write!(f, "missing {eval_type} evaluator for {expression}"),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 struct SplitExpression<T> {
     tree: Vec<Expression<T>>,

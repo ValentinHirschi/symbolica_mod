@@ -1538,7 +1538,7 @@ impl PythonTransformer {
             include_attributes,
             max_terms,
             alias_print_mode: alias_print_mode.into(),
-            custom_print_mode: custom_print_mode.map(|x| ("default", x)),
+            custom_print_mode: custom_print_mode.map(|x| ("default", x)).into(),
         }))
     }
 
@@ -2952,7 +2952,7 @@ impl PythonExpression {
                     include_attributes,
                     max_terms,
                     alias_print_mode: alias_print_mode.into(),
-                    custom_print_mode: custom_print_mode.map(|x| ("default", x)),
+                    custom_print_mode: custom_print_mode.map(|x| ("default", x)).into(),
                 },
             )
         ))

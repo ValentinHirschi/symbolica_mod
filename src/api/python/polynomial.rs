@@ -190,7 +190,7 @@ impl PythonPolynomial {
                 include_attributes,
                 max_terms,
                 alias_print_mode: alias_print_mode.into(),
-                custom_print_mode: custom_print_mode.map(|x| ("default", x)),
+                custom_print_mode: custom_print_mode.map(|x| ("default", x)).into(),
             },
             PrintState::new(),
         ))
@@ -1511,7 +1511,7 @@ impl PythonFiniteFieldPolynomial {
                 include_attributes,
                 max_terms,
                 alias_print_mode: alias_print_mode.into(),
-                custom_print_mode: custom_print_mode.map(|x| ("default", x)),
+                custom_print_mode: custom_print_mode.map(|x| ("default", x)).into(),
             },
             PrintState::new(),
         ))
@@ -2611,7 +2611,7 @@ impl PythonPrimeTwoPolynomial {
                 include_attributes,
                 max_terms,
                 alias_print_mode: alias_print_mode.into(),
-                custom_print_mode: custom_print_mode.map(|x| ("default", x)),
+                custom_print_mode: custom_print_mode.map(|x| ("default", x)).into(),
             },
             PrintState::new(),
         ))
@@ -3493,7 +3493,7 @@ impl PythonGaloisFieldPrimeTwoPolynomial {
                 include_attributes,
                 max_terms,
                 alias_print_mode: alias_print_mode.into(),
-                custom_print_mode: custom_print_mode.map(|x| ("default", x)),
+                custom_print_mode: custom_print_mode.map(|x| ("default", x)).into(),
             },
             PrintState::new(),
         ))
@@ -4477,7 +4477,7 @@ impl PythonGaloisFieldPolynomial {
                 include_attributes,
                 max_terms,
                 alias_print_mode: alias_print_mode.into(),
-                custom_print_mode: custom_print_mode.map(|x| ("default", x)),
+                custom_print_mode: custom_print_mode.map(|x| ("default", x)).into(),
             },
             PrintState::new(),
         ))
@@ -5407,7 +5407,7 @@ impl PythonNumberFieldPolynomial {
                 include_attributes,
                 max_terms,
                 alias_print_mode: alias_print_mode.into(),
-                custom_print_mode: custom_print_mode.map(|x| ("default", x)),
+                custom_print_mode: custom_print_mode.map(|x| ("default", x)).into(),
             },
             PrintState::new(),
         ))

@@ -1,5 +1,7 @@
 //! Methods for printing rings.
 
+use ahash::HashMap;
+
 /// The overall print mode.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -47,6 +49,72 @@ pub enum AliasPrintMode {
     OpaqueOnly,
     /// Print every alias index inside `<...>`, or `<<...>>` for opaque aliases.
     Index,
+}
+
+/// Represents user-defined data that can be used as a key in [PrintUserData].
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum PrintUserDataKey {
+    /// A small integer value.
+    Integer(i64),
+}
+
+/// Represents user-defined data that can be attached to [PrintOptions].
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum PrintUserData {
+    /// A small integer value.
+    Integer(i64),
+}
+
+/// Compatibility container for dev-style custom print settings.
+///
+/// The alias branch historically only supported a single `(&str, usize)`
+/// custom print mode.  Current spenso uses the dev API shape and queries the
+/// settings with `.get("spenso")`/`.get("typst")`.  This container preserves
+/// the alias branch's const-friendly defaults while accepting dev-style maps.
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Default)]
+pub enum CustomPrintMode {
+    #[default]
+    Empty,
+    Single(&'static str, PrintUserData),
+}
+
+impl CustomPrintMode {
+    pub const fn new() -> Self {
+        Self::Empty
+    }
+
+    pub fn get(&self, key: &str) -> Option<&PrintUserData> {
+        match self {
+            Self::Empty => None,
+            Self::Single(k, value) if *k == key => Some(value),
+            Self::Single(_, _) => None,
+        }
+    }
+
+    pub fn default_integer(&self) -> Option<i64> {
+        match self.get("default") {
+            Some(PrintUserData::Integer(value)) => Some(*value),
+            _ => None,
+        }
+    }
+}
+
+impl From<Option<(&'static str, usize)>> for CustomPrintMode {
+    fn from(value: Option<(&'static str, usize)>) -> Self {
+        value
+            .map(|(key, value)| Self::Single(key, PrintUserData::Integer(value as i64)))
+            .unwrap_or_default()
+    }
+}
+
+impl From<HashMap<String, PrintUserData>> for CustomPrintMode {
+    fn from(value: HashMap<String, PrintUserData>) -> Self {
+        value
+            .into_iter()
+            .next()
+            .map(|(key, value)| Self::Single(Box::leak(key.into_boxed_str()), value))
+            .unwrap_or_default()
+    }
 }
 
 /// Various options for printing expressions.
@@ -103,7 +171,7 @@ pub struct PrintOptions {
     pub max_terms: Option<usize>,
     /// Provides a handle to set the behavior of the custom print function.
     /// Symbolica does not use this option for its own printing.
-    pub custom_print_mode: Option<(&'static str, usize)>,
+    pub custom_print_mode: CustomPrintMode,
     /// Controls whether aliases are expanded or printed as bracketed alias bodies.
     pub alias_print_mode: AliasPrintMode,
 }
@@ -138,7 +206,7 @@ impl PrintOptions {
             include_attributes: false,
             color_namespace: true,
             max_terms: None,
-            custom_print_mode: None,
+            custom_print_mode: CustomPrintMode::new(),
             alias_print_mode: AliasPrintMode::Transparent,
         }
     }
@@ -171,7 +239,7 @@ impl PrintOptions {
             color_namespace: false,
             max_terms: None,
             bracket_level_colors: None,
-            custom_print_mode: None,
+            custom_print_mode: CustomPrintMode::new(),
             alias_print_mode: AliasPrintMode::Transparent,
         }
     }
@@ -204,7 +272,7 @@ impl PrintOptions {
             color_namespace: false,
             max_terms: None,
             bracket_level_colors: None,
-            custom_print_mode: None,
+            custom_print_mode: CustomPrintMode::new(),
             alias_print_mode: AliasPrintMode::Transparent,
         }
     }
@@ -237,7 +305,7 @@ impl PrintOptions {
             color_namespace: false,
             max_terms: None,
             bracket_level_colors: None,
-            custom_print_mode: None,
+            custom_print_mode: CustomPrintMode::new(),
             alias_print_mode: AliasPrintMode::Transparent,
         }
     }
@@ -270,13 +338,13 @@ impl PrintOptions {
             color_namespace: false,
             max_terms: None,
             bracket_level_colors: None,
-            custom_print_mode: None,
+            custom_print_mode: CustomPrintMode::new(),
             alias_print_mode: AliasPrintMode::Transparent,
         }
     }
 
     /// Print the output suitable for a file without namespaces.
-    pub const fn file_no_namespace() -> PrintOptions {
+    pub fn file_no_namespace() -> PrintOptions {
         Self {
             hide_all_namespaces: true,
             ..Self::file()
@@ -285,7 +353,7 @@ impl PrintOptions {
 
     /// Print the output suitable for a file with namespaces
     /// and attributes and tags.
-    pub const fn full() -> PrintOptions {
+    pub fn full() -> PrintOptions {
         Self {
             include_attributes: true,
             ..Self::file()
@@ -293,7 +361,7 @@ impl PrintOptions {
     }
 
     /// Print the output with namespaces suppressed.
-    pub const fn short() -> PrintOptions {
+    pub fn short() -> PrintOptions {
         Self {
             hide_all_namespaces: true,
             ..Self::new()
@@ -301,7 +369,7 @@ impl PrintOptions {
     }
 
     /// Print the output in a sympy input format.
-    pub const fn sympy() -> PrintOptions {
+    pub fn sympy() -> PrintOptions {
         Self {
             double_star_for_exponentiation: true,
             ..Self::file()

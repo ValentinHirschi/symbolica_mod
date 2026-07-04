@@ -421,7 +421,10 @@ fn print_options_to_dict<'py>(
         "alias_print_mode",
         PythonAliasPrintMode::from(options.alias_print_mode),
     )?;
-    dict.set_item("custom_print_mode", options.custom_print_mode.map(|x| x.1))?;
+    dict.set_item(
+        "custom_print_mode",
+        options.custom_print_mode.default_integer(),
+    )?;
 
     dict.set_item("level", state.level)?;
     dict.set_item("bracket_level", state.bracket_level)?;

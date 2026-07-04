@@ -5,7 +5,9 @@ use std::{
 
 use rand::Rng;
 
-use super::{Constructible, DoubleFloat, Float, FloatLike, Real, RealLike, SingleFloat};
+use super::{
+    Constructible, DoubleFloat, FixedPrecision, Float, FloatLike, Real, RealLike, SingleFloat,
+};
 use crate::domains::{InternalOrdering, integer::Integer, rational::Rational};
 
 /// A complex number, `re + i * im`, where `i` is the imaginary unit.
@@ -899,6 +901,11 @@ impl<T: FloatLike> From<T> for Complex<T> {
         let zero = value.zero();
         Complex::new(value, zero)
     }
+}
+
+impl<T: FixedPrecision> FixedPrecision for Complex<T> {
+    const BINARY_PRECISION: usize = T::BINARY_PRECISION;
+    const DECIMAL_PRECISION: usize = T::DECIMAL_PRECISION;
 }
 
 impl<'a, T: FloatLike + From<&'a Rational>> From<&'a Rational> for Complex<T> {

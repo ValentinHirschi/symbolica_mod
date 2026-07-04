@@ -32,6 +32,9 @@ use crate::{
 
 use super::PolyVariable;
 
+/// Compatibility alias for dev's structured series error type.
+pub type SeriesError = String;
+
 /// The requested truncation depth of a series expansion.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum SeriesDepth {
