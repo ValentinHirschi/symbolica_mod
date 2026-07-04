@@ -77,8 +77,8 @@ optional = true
 version = "0.28"
 
 [dependencies]
-numerica = "2.0"
-graphica = "2.0"
+numerica = { path = "lib/numerica" }
+graphica = { path = "lib/graphica" }
 
 ahash = "0.8.7"
 append-only-vec = "0.1"
