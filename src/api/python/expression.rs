@@ -7181,6 +7181,7 @@ impl PythonExpression {
         (
         params,
         functions = HashMap::default(),
+        aliases = None,
         iterations = 1,
         cpe_iterations = None,
         n_cores = 4,
@@ -7197,6 +7198,7 @@ impl PythonExpression {
         &self,
         params: Vec<PythonExpression>,
         functions: HashMap<(PolyVariable, Vec<PolyVariable>), PythonExpression>,
+        aliases: Option<Vec<(PythonExpression, PythonExpression)>>,
         iterations: usize,
         cpe_iterations: Option<usize>,
         n_cores: usize,
@@ -7282,14 +7284,23 @@ impl PythonExpression {
         };
 
         let params: Vec<_> = params.iter().map(|x| x.expr.clone()).collect();
+        let aliases = aliases
+            .unwrap_or_default()
+            .into_iter()
+            .map(|(handle, body)| (handle.expr, body.expr))
+            .collect::<Vec<_>>();
 
         let eval = py
             .detach(move || {
-                self.expr
+                let mut builder = self
+                    .expr
                     .evaluator(&params)
                     .function_map(fn_map)
-                    .optimization_settings(settings)
-                    .build()
+                    .optimization_settings(settings);
+                if !aliases.is_empty() {
+                    builder = builder.add_aliases(aliases)?;
+                }
+                builder.build()
             })
             .map_err(|e| {
                 exceptions::PyValueError::new_err(format!("Could not create evaluator: {e}"))
@@ -7361,6 +7372,7 @@ impl PythonExpression {
         (exprs,
         params,
         functions = HashMap::default(),
+        aliases = None,
         iterations = 1,
         cpe_iterations = None,
         n_cores = 4,
@@ -7378,6 +7390,7 @@ impl PythonExpression {
         exprs: Vec<PythonExpression>,
         params: Vec<PythonExpression>,
         functions: HashMap<(PolyVariable, Vec<PolyVariable>), PythonExpression>,
+        aliases: Option<Vec<(PythonExpression, PythonExpression)>>,
         iterations: usize,
         cpe_iterations: Option<usize>,
         n_cores: usize,
@@ -7464,14 +7477,23 @@ impl PythonExpression {
         let params: Vec<_> = params.iter().map(|x| x.expr.clone()).collect();
 
         let exprs = exprs.iter().map(|x| x.expr.as_view()).collect::<Vec<_>>();
+        let aliases = aliases
+            .unwrap_or_default()
+            .into_iter()
+            .map(|(handle, body)| (handle.expr, body.expr))
+            .collect::<Vec<_>>();
 
-        let eval = Atom::evaluator_multiple(&exprs, &params)
+        let mut builder = Atom::evaluator_multiple(&exprs, &params)
             .function_map(fn_map)
-            .optimization_settings(settings)
-            .build()
-            .map_err(|e| {
-                exceptions::PyValueError::new_err(format!("Could not create evaluator: {e}"))
-            })?;
+            .optimization_settings(settings);
+        if !aliases.is_empty() {
+            builder = builder
+                .add_aliases(aliases)
+                .map_err(|e| exceptions::PyValueError::new_err(e.to_string()))?;
+        }
+        let eval = builder.build().map_err(|e| {
+            exceptions::PyValueError::new_err(format!("Could not create evaluator: {e}"))
+        })?;
 
         Ok(PythonExpressionEvaluator {
             rational_constants: eval.get_constants().to_vec(),
