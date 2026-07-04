@@ -2778,6 +2778,23 @@ impl PythonExpression {
         self.expr.clone().into()
     }
 
+    /// Create an alias atom for this expression.
+    ///
+    /// If `opaque` is true, operations that respect opacity keep the alias as
+    /// an atom instead of transparently descending into its body. This exposes
+    /// the existing Rust-level alias primitive to Python so callers can build
+    /// explicit symbolic DAGs.
+    #[pyo3(signature = (opaque = true))]
+    pub fn alias(&self, opaque: bool) -> PyResult<PythonExpression> {
+        Ok(self.expr.alias(opaque).into())
+    }
+
+    /// Replace subexpressions that are already registered in the global alias
+    /// store by their alias atom.
+    pub fn alias_known_aliases(&self) -> PyResult<PythonExpression> {
+        Ok(self.expr.alias_known_aliases().into())
+    }
+
     /// Replace repeated non-variable subexpressions by transparent aliases.
     ///
     /// This keeps the expression algebraically equivalent, but stores each repeated
@@ -6080,6 +6097,8 @@ impl PythonExpression {
         verbose = false,
         jit_compile = true,
         direct_translation = true,
+        jit_direct_translation = false,
+        jit_optimization_level = 3,
         max_horner_scheme_variables = 500,
         max_common_pair_cache_entries = 1_000_000,
         max_common_pair_distance = 100),
@@ -6094,11 +6113,14 @@ impl PythonExpression {
         verbose: bool,
         jit_compile: bool,
         direct_translation: bool,
+        jit_direct_translation: bool,
+        jit_optimization_level: u8,
         max_horner_scheme_variables: usize,
         max_common_pair_cache_entries: usize,
         max_common_pair_distance: usize,
         py: Python,
     ) -> PyResult<PythonExpressionEvaluator> {
+        let _ = (jit_direct_translation, jit_optimization_level);
         let mut fn_map = FunctionMap::new();
 
         for ((symbol, args), body) in functions {
@@ -6215,6 +6237,8 @@ impl PythonExpression {
         verbose = false,
         jit_compile = true,
         direct_translation = true,
+        jit_direct_translation = false,
+        jit_optimization_level = 3,
         max_horner_scheme_variables = 500,
         max_common_pair_cache_entries = 1_000_000,
         max_common_pair_distance = 100)
@@ -6230,10 +6254,13 @@ impl PythonExpression {
         verbose: bool,
         jit_compile: bool,
         direct_translation: bool,
+        jit_direct_translation: bool,
+        jit_optimization_level: u8,
         max_horner_scheme_variables: usize,
         max_common_pair_cache_entries: usize,
         max_common_pair_distance: usize,
     ) -> PyResult<PythonExpressionEvaluator> {
+        let _ = (jit_direct_translation, jit_optimization_level);
         let mut fn_map = FunctionMap::new();
 
         for ((symbol, args), body) in functions {

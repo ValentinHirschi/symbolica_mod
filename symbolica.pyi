@@ -979,6 +979,20 @@ class Expression:
         Copy the expression.
         """
 
+    def alias(self, opaque: bool = True) -> Expression:
+        """
+        Create an alias atom for this expression.
+
+        If `opaque` is true, operations that respect opacity keep the alias as
+        an atom instead of transparently descending into its body.
+        """
+
+    def alias_known_aliases(self) -> Expression:
+        """
+        Replace subexpressions that are already registered in the global alias
+        store by their alias atom.
+        """
+
     def remove_repeated_subexpressions(self) -> Expression:
         """
         Replace repeated non-variable subexpressions by transparent aliases.
@@ -3170,6 +3184,8 @@ class Expression:
         verbose: bool = False,
         jit_compile: bool = True,
         direct_translation: bool = True,
+        jit_direct_translation: bool = False,
+        jit_optimization_level: int = 3,
         max_horner_scheme_variables: int = 500,
         max_common_pair_cache_entries: int = 1000000,
         max_common_pair_distance: int = 100,
@@ -3233,6 +3249,10 @@ class Expression:
             significant performance improvements.
         direct_translation: bool, optional
             If set to `True`, the optimized expression will be directly constructed from atoms without building a tree.
+        jit_direct_translation: bool, optional
+            If set to `True`, JIT compilation directly translates Symbolica instructions to SymJIT IR when supported by the backend.
+        jit_optimization_level: int, optional
+            The optimization level to use for JIT compilation when supported by the backend.
         max_horner_scheme_variables: int, optional
             The maximum number of variables in a Horner scheme.
         max_common_pair_cache_entries: int, optional
@@ -3253,6 +3273,8 @@ class Expression:
         verbose: bool = False,
         jit_compile: bool = True,
         direct_translation: bool = True,
+        jit_direct_translation: bool = False,
+        jit_optimization_level: int = 3,
         max_horner_scheme_variables: int = 500,
         max_common_pair_cache_entries: int = 1000000,
         max_common_pair_distance: int = 100,
@@ -3294,6 +3316,10 @@ class Expression:
             Whether JIT compilation should be enabled.
         direct_translation: bool
             Whether to prefer direct translation when compiling the evaluator.
+        jit_direct_translation: bool
+            Whether JIT compilation should directly translate Symbolica instructions to SymJIT IR when supported by the backend.
+        jit_optimization_level: int
+            The optimization level to use for JIT compilation when supported by the backend.
         max_horner_scheme_variables: int
             The maximum number of variables considered for Horner-scheme optimization.
         max_common_pair_cache_entries: int
